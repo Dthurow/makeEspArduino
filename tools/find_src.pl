@@ -15,7 +15,6 @@
 
 use strict;
 use File::Basename;
-use Cwd;
 
 my %src_files;
 my %inc_dirs;
@@ -23,7 +22,7 @@ my %user_libs;
 my @search_dirs;
 my %src_dirs;
 my %checked_files;
-
+my $exclude_match = shift;
 sub uniq {
   my %seen;
   grep !$seen{$_}++, @_;
@@ -41,8 +40,10 @@ sub find_inc {
     my $match = $1;
     next if $checked_files{$match};
     $checked_files{$match}++;
+    #skip it if its referencing an excluded dir
+    next if ($match =~ /$exclude_match/);
     for (my $i = 0; $i < @search_dirs; $i++) {
-      my $inc_file = Cwd::abs_path("$search_dirs[$i]/$match");
+      my $inc_file = "$search_dirs[$i]/$match";
       next unless -f $inc_file;
       find_inc($inc_file);
       my $dir = dirname($inc_file);
@@ -63,7 +64,7 @@ sub find_inc {
 
 #--------------------------------------------------------------------
 
-my $exclude_match = shift;
+
 
 # Parameters are within quotes to delay possible wildcard file name expansions
 my @libs = split(" ", "@ARGV");
@@ -129,4 +130,4 @@ foreach (@search_dirs) {
 }
 print "\n";
 print "USER_SRC = ", join(" ", sort(keys %src_files)), "\n";
-print "USER_LIBS = ", join(" ", keys %user_libs), "\n";
+print "USER_LIBS = ", join(" ", keys %user_libs), "\n"
